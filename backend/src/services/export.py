@@ -9,10 +9,12 @@ def csv_response(result,filename):
     return Response('﻿'+buf.getvalue(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="'+filename+'"'})
 def run_csv(db,id):
     r=get_run(db,id)
+    if r.state=='quarantined':raise HTTPException(409,'该研究含已撤回授权访客的数据，已停止取用，禁止导出')
     if r.state!='completed':raise HTTPException(409,'结果尚未完成')
     return csv_response(r.result,'run-'+str(id)+'.csv')
 def note_csv(db,id):
     n=db.get(Note,id)
     if not n:raise HTTPException(404,'未找到说明')
+    if n.state=='revoked':raise HTTPException(409,'该备选含已撤回授权访客的留档，已停止取用，禁止导出')
     if n.state!='approved':raise HTTPException(403,'仅批准后的业务说明可导出')
     return csv_response(n.frozen_result,'approved-'+str(id)+'.csv')

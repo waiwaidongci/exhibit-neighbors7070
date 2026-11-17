@@ -7,6 +7,7 @@ from .audit import log
 def list_notes(db):return [row(n) for n in db.scalars(select(Note).order_by(Note.id.desc()))]
 def create_note(db,user,data):
     r=get_run(db,data.run_id)
+    if r.state=='quarantined':raise HTTPException(409,'该研究含已撤回授权访客的数据，已停止取用')
     if r.state!='completed':raise HTTPException(409,'只可为已完成结果提交说明')
     n=Note(run_id=r.id,title=data.title,body=data.body,state='draft',frozen_result=r.result,author=user.email)
     db.add(n);db.flush();log(db,user,'note.created',n.id,n.title);db.commit();return row(n)

@@ -1,3 +1,6 @@
 -- SQLAlchemy metadata initializes tables idempotently.
 -- Domain tables: exhibitions, visitor_ratings, recommendation_runs, curator_selections.
 -- Unique natural keys: source.key; (record.source_id, record.reference).
+-- 授权撤回：visitor_withdrawals 仅保存访客标识的 HMAC 匿名凭据与可恢复清理状态
+-- （blocked 已阻断 / cleaning 清理中 / completed 已完成），原始访客标识永不入库。
+-- 受影响研究置 quarantined、受影响备选置 revoked，停止取用并清除留档文件。

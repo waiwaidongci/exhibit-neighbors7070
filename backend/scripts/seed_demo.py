@@ -11,6 +11,7 @@ from src.utils.security import hash_password
 from src.utils.serialization import now
 from src.services.runs import queue
 from src.services.domain_validation import validate_record
+from src.services.suppression import visitor_is_suppressed
 
 def seed_values(kind,index,batch,rng):
     if kind=='gaussian':
@@ -47,6 +48,9 @@ def seed():
                 reference=key+f'-{index+1:04}'
                 vals=seed_values(CONFIG['algorithm'],index,batch,rng)
                 if not db.scalar(select(Record.id).where(Record.source_id==source.id,Record.reference==reference)):
+                    # 重复导入防御：已撤回访客的数据永不复活
+                    if visitor_is_suppressed(db,vals['visitor']):
+                        logging.warning('skip withdrawn visitor record %s',reference);continue
                     db.add(Record(source_id=source.id,reference=reference,values=validate_record(vals)))
             db.flush()
             if batch==0 and not db.scalar(select(Run.id).where(Run.name=='首轮种子研究')):

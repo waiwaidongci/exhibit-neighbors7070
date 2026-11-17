@@ -6,6 +6,7 @@ from ..models.record import Record
 from ..utils.serialization import row
 from .audit import log
 from .domain_validation import validate_record
+from .suppression import assert_visitor_allowed
 def list_sources(db):
     rows=[]
     for s in db.scalars(select(Source).order_by(Source.id)):
@@ -30,6 +31,7 @@ def add_records(db,user,id,data):
         refs.add(r.reference)
         try: values=validate_record(r.values)
         except ValueError as e:raise HTTPException(422,str(e))
+        assert_visitor_allowed(db,values['visitor'])
         if db.scalar(select(Record.id).where(Record.source_id==id,Record.reference==r.reference)):raise HTTPException(409,'样本编号已存在：'+r.reference)
         validated.append(Record(source_id=id,reference=r.reference,values=values))
     db.add_all(validated);log(db,user,'records.added',id,str(len(validated)));db.commit();return {'added':len(validated)}
